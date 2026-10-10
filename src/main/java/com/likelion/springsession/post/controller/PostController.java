@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 @RestController
 @RequestMapping("/api/posts")
@@ -32,9 +33,10 @@ public class PostController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public PostDetailResponse createPost(
+            @AuthenticationPrincipal Long userId,
             @Valid @RequestBody PostCreateRequest request
     ) {
-        return postService.createPost(request);
+        return postService.createPost(userId, request);
     }
     @GetMapping("/{postId}")
     public PostDetailResponse getPost(
@@ -44,14 +46,18 @@ public class PostController {
     }
     @PutMapping("/{postId}")
     public PostDetailResponse updatePost(
+            @AuthenticationPrincipal Long userId,
             @PathVariable("postId") Long postId,
             @Valid @RequestBody PostUpdateRequest request
             ) {
-        return postService.updatePost(postId, request);
+        return postService.updatePost(userId, postId, request);
     }
     @DeleteMapping("/{postId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deletePost(@PathVariable("postId") Long postId) {
-        postService.deletePost(postId);
+    public void deletePost(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable("postId") Long postId
+    ) {
+        postService.deletePost(userId, postId);
     }
 }

@@ -6,12 +6,15 @@ import com.likelion.springsession.comment.entity.Comment;
 import com.likelion.springsession.comment.repository.CommentRepository;
 import com.likelion.springsession.post.entity.Post;
 import com.likelion.springsession.post.repository.PostRepository;
+import com.likelion.springsession.user.entity.User;
+import com.likelion.springsession.user.exception.UserNotFoundException;
+import com.likelion.springsession.user.repository.UserRepository;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import com.likelion.springsession.comment.exception.CommentAccessDeniedException;
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
@@ -19,16 +22,20 @@ import org.springframework.transaction.annotation.Transactional;
 public class CommentService {
     private final CommentRepository commentRepository;
     private final PostRepository postRepository;
+    private final UserRepository userRepository;
 
     @Transactional
-    public CommentResponse addComment(Long postId, CommentCreateRequest request) {
+    public CommentResponse addComment(Long userId, Long postId, CommentCreateRequest request) {
         Post post = postRepository.findById(postId)
                 .orElseThrow();
-        Comment saved = commentRepository.save(new Comment(post, request.getContent()));
+        User author = userRepository.findById(userId)
+                .orElseThrow(UserNotFoundException::new);
+        Comment saved = commentRepository.save(new Comment(post, author, request.getContent()));
         return new CommentResponse(saved);
     }
     @Transactional
     public CommentResponse updateComment(
+            Long userId,
             Long postId,
             Long commentId,
             CommentUpdateRequest request
@@ -37,25 +44,27 @@ public class CommentService {
                 .orElseThrow();
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow();
-
         if (!comment.getPost().getId().equals(post.getId())) {
             throw new IllegalArgumentException();
-        } //이게 맞나;;
-
+        }
+        if (!comment.isAuthor(userId)) {
+            throw new CommentAccessDeniedException();
+        }
         comment.update(request.getContent());
         return new CommentResponse(comment);
     }
     @Transactional
-    public void deleteComment(Long postId, Long commentId) {
+    public void deleteComment(Long userId, Long postId, Long commentId) {
         Post post = postRepository.findById(postId)
                 .orElseThrow();
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow();
-
         if (!comment.getPost().getId().equals(post.getId())) {
             throw new IllegalArgumentException();
-        } // 이거는 안 필요한 거 같은데;;
-
+        }
+        if (!comment.isAuthor(userId)) {
+            throw new CommentAccessDeniedException();
+        }
         post.getComments().removeIf(c -> c.getId().equals(commentId));
     }
     public List<CommentResponse> getComments(Long postId) {

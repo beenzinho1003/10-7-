@@ -2,6 +2,7 @@ package com.likelion.springsession.comment.entity;
 
 
 import com.likelion.springsession.post.entity.Post;
+import com.likelion.springsession.user.entity.User;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
@@ -27,13 +28,21 @@ public class Comment {
     @JoinColumn(name = "post_id", nullable = false)
     private Post post;
 
-    public Comment(Post post, String content) {
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "author_id", nullable = false)
+    private User author;
+
+    public Comment(Post post, User author, String content) {
         this.post = post;
+        this.author = author;
         post.getComments().add(this);
         this.content = content;
         this.createdAt = LocalDateTime.now();
     }
     public void update(String content) {
         this.content = content;
+    }
+    public boolean isAuthor(Long userId) {
+        return this.author.getId().equals(userId);
     }
 }

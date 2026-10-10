@@ -3,6 +3,7 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import com.likelion.springsession.comment.entity.Comment;
+import com.likelion.springsession.user.entity.User;
 import jakarta.persistence.OneToMany;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,11 +29,16 @@ public class Post {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "author_id", nullable = false)
+    private User author;
+
     @OneToMany(mappedBy = "post", cascade =CascadeType.REMOVE, orphanRemoval = true)
     private List<Comment> comments = new ArrayList<>();
 
-    public Post(String title, String content)
+    public Post(User author, String title, String content)
     {
+        this.author = author;
         this.title = title;
         this.content = content;
         this.createdAt = LocalDateTime.now();
@@ -40,6 +46,9 @@ public class Post {
     public void update(String title, String content) {
         this.title = title;
         this.content = content;
+    }
+    public boolean isAuthor(Long userId) {
+        return this.author.getId().equals(userId);
     }
 }
 
